@@ -3,12 +3,17 @@ import 'package:firebase_core/firebase_core.dart';
 import 'theme/app_theme.dart';
 import 'firebase_options.dart';
 import 'pages/auth_gate.dart';
+import 'services/preferences_service.dart';
+import 'state/game_state.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  // Initialize preferences and hydrate game state for resume functionality
+  await PreferencesService.init();
+  GameState.instance.hydrateFromPrefs();
   runApp(const MyApp());
 }
 

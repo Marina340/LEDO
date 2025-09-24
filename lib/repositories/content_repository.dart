@@ -72,11 +72,6 @@ class MockContentRepository implements ContentRepository {
       nextMissionId: 'm2',
       content: const [
         // Level 1 A – Intro to LEADO
-        DialogueLine(id: 'm1a1', text: 'Hey!', character: 'LEADO'),
-        DialogueLine(id: 'm1a2', text: 'You must be new here!', character: 'LEADO'),
-        DialogueLine(id: 'm1a3', text: "Well, my name is LEADO and we're about to go a learning journey together!", character: 'LEADO'),
-        DialogueLine(id: 'm1a4', text: 'What nickname would you like me to call you by?', character: 'LEADO'),
-        DialogueLine(id: 'm1a5', text: 'Excellent!', character: 'LEADO'),
         DialogueLine(id: 'm1a6', text: 'How about we answer a few questions together, shall we?', character: 'LEADO'),
 
         // Level 1 B – Ready and neutral questions start
@@ -86,10 +81,10 @@ class MockContentRepository implements ContentRepository {
           prompt: 'How would you react if you were put on a new team?',
           type: QuestionType.mcq,
           options: [
-            AnswerOption(id: 'q1a', text: 'Nervous and a bit scared'),
-            AnswerOption(id: 'q1b', text: 'Excited to meet new people!!'),
-            AnswerOption(id: 'q1c', text: '“meh” (neutral)'),
-            AnswerOption(id: 'q1d', text: 'Hate it! Not a fan of change.'),
+            AnswerOption(id: 'q1a', text: 'Nervous and a bit scared', isCorrect: false),
+            AnswerOption(id: 'q1b', text: 'Excited to meet new people!!', isCorrect: true),
+            AnswerOption(id: 'q1c', text: '“meh” (neutral)', isCorrect: false),
+            AnswerOption(id: 'q1d', text: 'Hate it! Not a fan of change.', isCorrect: false),
           ],
         ),
         Question(
@@ -97,10 +92,10 @@ class MockContentRepository implements ContentRepository {
           prompt: 'How would you react if you were told to lead a group?',
           type: QuestionType.mcq,
           options: [
-            AnswerOption(id: 'q2a', text: 'Bring it on!!'),
-            AnswerOption(id: 'q2b', text: 'I wouldn’t sleep for days!'),
-            AnswerOption(id: 'q2c', text: 'Not my cup of tea.'),
-            AnswerOption(id: 'q2d', text: 'New experiences lead to new gains'),
+            AnswerOption(id: 'q2a', text: 'Bring it on!!', isCorrect: true),
+            AnswerOption(id: 'q2b', text: 'I wouldn’t sleep for days!', isCorrect: false),
+            AnswerOption(id: 'q2c', text: 'Not my cup of tea.', isCorrect: false),
+            AnswerOption(id: 'q2d', text: 'New experiences lead to new gains', isCorrect: true),
           ],
         ),
         Question(
@@ -108,10 +103,10 @@ class MockContentRepository implements ContentRepository {
           prompt: 'What would you do if you disagreed with another team member?',
           type: QuestionType.mcq,
           options: [
-            AnswerOption(id: 'q3a', text: 'Calmly explain my opinion.'),
-            AnswerOption(id: 'q3b', text: 'I’d just go with it.'),
-            AnswerOption(id: 'q3c', text: 'I would argue it out.'),
-            AnswerOption(id: 'q3d', text: 'If logical, I’d agree to save time and effort.'),
+            AnswerOption(id: 'q3a', text: 'Calmly explain my opinion.', isCorrect: true),
+            AnswerOption(id: 'q3b', text: 'I’d just go with it.', isCorrect: false),
+            AnswerOption(id: 'q3c', text: 'I would argue it out.', isCorrect: false),
+            AnswerOption(id: 'q3d', text: 'If logical, I’d agree to save time and effort.', isCorrect: true),
           ],
         ),
         Question(
@@ -119,10 +114,10 @@ class MockContentRepository implements ContentRepository {
           prompt: 'What would you do if you disagreed with a team leader?',
           type: QuestionType.mcq,
           options: [
-            AnswerOption(id: 'q4a', text: 'Calmly explain my opinion.'),
-            AnswerOption(id: 'q4b', text: 'I’d just go with it.'),
-            AnswerOption(id: 'q4c', text: 'I would argue it out.'),
-            AnswerOption(id: 'q4d', text: 'If logical, I’d agree to save time and effort.'),
+            AnswerOption(id: 'q4a', text: 'Calmly explain my opinion.', isCorrect: true),
+            AnswerOption(id: 'q4b', text: 'I’d just go with it.', isCorrect: false),
+            AnswerOption(id: 'q4c', text: 'I would argue it out.', isCorrect: false),
+            AnswerOption(id: 'q4d', text: 'If logical, I’d agree to save time and effort.', isCorrect: true),
           ],
         ),
 
@@ -134,10 +129,10 @@ class MockContentRepository implements ContentRepository {
           prompt: 'How would you deal in a conflict with a friend?',
           type: QuestionType.mcq,
           options: [
-            AnswerOption(id: 'q5a', text: 'Fighting mode!!'),
-            AnswerOption(id: 'q5b', text: 'Resolve the issue calmly.'),
-            AnswerOption(id: 'q5c', text: 'Pretend like nothing happened'),
-            AnswerOption(id: 'q5d', text: 'Apologize even if it’s not my fault.'),
+            AnswerOption(id: 'q5a', text: 'Fighting mode!!', isCorrect: false),
+            AnswerOption(id: 'q5b', text: 'Resolve the issue calmly.', isCorrect: true),
+            AnswerOption(id: 'q5c', text: 'Pretend like nothing happened', isCorrect: false),
+            AnswerOption(id: 'q5d', text: 'Apologize even if it’s not my fault.', isCorrect: false),
           ],
         ),
         Question(
@@ -145,10 +140,10 @@ class MockContentRepository implements ContentRepository {
           prompt: 'How do you like to celebrate a personal success?',
           type: QuestionType.mcq,
           options: [
-            AnswerOption(id: 'q6a', text: 'Go out and party!!'),
-            AnswerOption(id: 'q6b', text: 'It’s not a big deal.'),
-            AnswerOption(id: 'q6c', text: 'Post on social media.'),
-            AnswerOption(id: 'q6d', text: 'Buy myself a gift.'),
+            AnswerOption(id: 'q6a', text: 'Go out and party!!', isCorrect: false),
+            AnswerOption(id: 'q6b', text: 'It’s not a big deal.', isCorrect: false),
+            AnswerOption(id: 'q6c', text: 'Post on social media.', isCorrect: false),
+            AnswerOption(id: 'q6d', text: 'Buy myself a gift.', isCorrect: true),
           ],
         ),
         Question(
@@ -156,10 +151,10 @@ class MockContentRepository implements ContentRepository {
           prompt: 'What would you do if you got lost in a supermarket?',
           type: QuestionType.mcq,
           options: [
-            AnswerOption(id: 'q7a', text: 'Ask for directions'),
-            AnswerOption(id: 'q7b', text: 'Figure it out myself.'),
-            AnswerOption(id: 'q7c', text: 'Just go home.'),
-            AnswerOption(id: 'q7d', text: 'Seek help after trying.'),
+            AnswerOption(id: 'q7a', text: 'Ask for directions', isCorrect: true),
+            AnswerOption(id: 'q7b', text: 'Figure it out myself.', isCorrect: false),
+            AnswerOption(id: 'q7c', text: 'Just go home.', isCorrect: false),
+            AnswerOption(id: 'q7d', text: 'Seek help after trying.', isCorrect: true),
           ],
         ),
 

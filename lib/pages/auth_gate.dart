@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
 import 'login_page.dart';
 import 'home_page.dart';
+import '../services/preferences_service.dart';
+import 'onboarding_page.dart';
 
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
@@ -20,6 +22,11 @@ class AuthGate extends StatelessWidget {
           );
         }
         if (snapshot.hasData) {
+          // If user is authenticated but has not completed onboarding, show it once
+          final onboarded = PreferencesService.instance.onboarded;
+          if (!onboarded) {
+            return const OnboardingPage();
+          }
           return const HomePage();
         }
         return const LoginPage();

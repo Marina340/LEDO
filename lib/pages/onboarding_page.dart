@@ -4,6 +4,7 @@ import '../repositories/content_repository.dart';
 import 'quiz_page.dart';
 import '../ui/widgets/primary_button.dart';
 import '../ui/widgets/chat_bubble.dart';
+import '../services/preferences_service.dart';
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
@@ -26,6 +27,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
   void initState() {
     super.initState();
     _load();
+    // Prefill username if available
+    _username = PreferencesService.instance.username;
+    if (_username.isNotEmpty) {
+      _nameCtrl.text = _username;
+    }
   }
 
   Future<void> _load() async {
@@ -57,6 +63,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
       setState(() => _countdown = i - 1);
     }
     if (!mounted) return;
+    // Persist onboarding completion and username before starting quiz
+    await PreferencesService.instance.setOnboarded(true);
+    if (_username.isNotEmpty) {
+      await PreferencesService.instance.setUsername(_username);
+    }
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (_) => const QuizPage()),
     );

@@ -42,6 +42,7 @@ class _QuizPageState extends State<QuizPage> {
       _score = GameState.instance.getScore(widget.missionId);
       _loading = false;
     });
+    _hydrateSelection();
     _revealOptionsWithDelay();
   }
 
@@ -65,6 +66,7 @@ class _QuizPageState extends State<QuizPage> {
     });
     // Save progress immediately after answering
     GameState.instance.saveProgress(widget.missionId, _contentIndex, _score);
+    GameState.instance.saveAnswerIndex(widget.missionId, _contentIndex, optionIdx);
   }
 
   void _next() {
@@ -77,6 +79,8 @@ class _QuizPageState extends State<QuizPage> {
       });
       // Persist progress after moving forward
       GameState.instance.saveProgress(widget.missionId, _contentIndex, _score);
+      // Restore selection if previously answered
+      _hydrateSelection();
       // Motivational popup after question 4 in Mission 1
       final questions = _mission!.questions;
       final currIsQuestion = _mission!.content[_contentIndex] is Question;
@@ -102,6 +106,42 @@ class _QuizPageState extends State<QuizPage> {
       );
       // Clear progress on finish
       GameState.instance.clearProgress(widget.missionId);
+    }
+  }
+
+  void _handleBack() {
+    if (_contentIndex > 0) {
+      setState(() {
+        _contentIndex--;
+        _selectedIdx = null;
+        _isCorrect = null;
+        _optionsVisible = false;
+      });
+      // Persist progress after moving back
+      GameState.instance.saveProgress(widget.missionId, _contentIndex, _score);
+      _hydrateSelection();
+      _revealOptionsWithDelay();
+    } else {
+      Navigator.of(context).maybePop();
+    }
+  }
+
+  void _hydrateSelection() {
+    final savedIdx = GameState.instance.getAnswerIndex(widget.missionId, _contentIndex);
+    if (savedIdx != null && _mission != null) {
+      final item = _mission!.content[_contentIndex];
+      if (item is Question) {
+        final opt = item.options[savedIdx];
+        setState(() {
+          _selectedIdx = savedIdx;
+          _isCorrect = opt.isCorrect;
+        });
+      }
+    } else {
+      setState(() {
+        _selectedIdx = null;
+        _isCorrect = null;
+      });
     }
   }
 
@@ -169,7 +209,10 @@ class _QuizPageState extends State<QuizPage> {
     }
 
     return Scaffold(
-      appBar: const GameHeader(),
+      appBar: GameHeader(
+        showBack: true,
+        onBack: _handleBack,
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -179,11 +222,6 @@ class _QuizPageState extends State<QuizPage> {
             // Progress and score pill
             Container(
               padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.grey.shade300),
-              ),
               child: Row(
                 children: [
                   Expanded(
@@ -198,11 +236,26 @@ class _QuizPageState extends State<QuizPage> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  Text('${_score} / ${_mission!.totalPoints}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('${_score}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                      const SizedBox(width: 4),
+                      Image.asset('assets/images/coin.png', height: 16),
+                      const SizedBox(width: 6),
+                    ],
+                  ),
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 8),
+            if (item is Question) Center(
+              child: Text(
+                'Question $currentQNumber out of ${questions.length}',
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.black54),
+              ),
+            ),
+            const SizedBox(height: 16),
             if (item is DialogueLine) ...[
               AnimatedOpacity(
                 opacity: 1,
@@ -231,6 +284,7 @@ class _QuizPageState extends State<QuizPage> {
                 child: !_optionsVisible
                     ? const SizedBox.shrink()
                     : Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: List.generate(item.options.length, (i) {
                           final option = item.options[i];
                           bool? correctState;
@@ -239,11 +293,14 @@ class _QuizPageState extends State<QuizPage> {
                           }
                           return Padding(
                             padding: const EdgeInsets.symmetric(vertical: 6),
-                            child: OptionTile(
-                              text: option.text,
-                              selected: _selectedIdx == i,
-                              correct: correctState,
-                              onTap: () => _onSelect(i),
+                            child: SizedBox(
+                              width: double.infinity,
+                              child: OptionTile(
+                                text: option.text,
+                                selected: _selectedIdx == i,
+                                correct: correctState,
+                                onTap: () => _onSelect(i),
+                              ),
                             ),
                           );
                         }),
