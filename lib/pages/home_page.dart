@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../state/game_state.dart';
 import 'onboarding_page.dart';
 import '../services/preferences_service.dart';
 import 'quiz_page.dart';
@@ -91,7 +93,7 @@ class HomePage extends StatelessWidget {
                           icon: Icons.play_arrow_rounded,
                           label: 'Resume where I left off',
                           onPressed: () {
-                            final missionId = prefs.lastMissionId!;
+                            final missionId = prefs.lastMissionId ?? 'm1';
                             Navigator.of(context).push(
                               MaterialPageRoute(builder: (_) => QuizPage(missionId: missionId)),
                             );
@@ -102,6 +104,19 @@ class HomePage extends StatelessWidget {
                           icon: Icons.refresh_rounded,
                           label: 'Start over',
                           onPressed: () {
+                            // Reset local in-memory state and preferences
+                            GameState.instance.reset();
+                            PreferencesService.instance.clearLastProgress();
+
+                            // Reset user's totalPoints in Firestore
+                            final uid = authService.currentUser?.uid;
+                            if (uid != null) {
+                              FirebaseFirestore.instance.collection('users').doc(uid).set({
+                                'totalPoints': 0,
+                                'updatedAt': FieldValue.serverTimestamp(),
+                              }, SetOptions(merge: true));
+                            }
+
                             Navigator.of(context).push(
                               MaterialPageRoute(builder: (_) => const OnboardingPage()),
                             );

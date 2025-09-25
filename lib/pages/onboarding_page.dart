@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../models/models.dart';
 import '../repositories/content_repository.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../repositories/content_repository_firebase.dart';
+import '../services/auth_service.dart';
 import 'quiz_page.dart';
 import '../ui/widgets/primary_button.dart';
 import '../ui/widgets/chat_bubble.dart';
@@ -14,7 +17,11 @@ class OnboardingPage extends StatefulWidget {
 }
 
 class _OnboardingPageState extends State<OnboardingPage> {
-  final ContentRepository _repo = MockContentRepository();
+  final ContentRepository _repo = FirebaseContentRepository(
+    firestore: FirebaseFirestore.instance,
+    // Read UID from AuthService (backed by FirebaseAuth)
+    getUserId: () => AuthService().currentUser!.uid,
+  );
   final TextEditingController _nameCtrl = TextEditingController();
   List<DialogueLine> _lines = const [];
   int _idx = 0;

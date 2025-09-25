@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/models.dart';
 import '../repositories/content_repository.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../repositories/content_repository_firebase.dart';
+import '../services/auth_service.dart';
+import '../services/preferences_service.dart';
 import '../ui/widgets/option_tile.dart';
 import '../ui/widgets/primary_button.dart';
 import '../ui/widgets/game_header.dart';
@@ -10,14 +14,19 @@ import 'results_page.dart';
 
 class QuizPage extends StatefulWidget {
   final String missionId;
-  const QuizPage({super.key, this.missionId = 'm1'});
+  final bool resetOnStart;
+  const QuizPage({super.key, this.missionId = 'm1', this.resetOnStart = false});
 
   @override
   State<QuizPage> createState() => _QuizPageState();
 }
 
 class _QuizPageState extends State<QuizPage> {
-  final ContentRepository _repo = MockContentRepository();
+  final ContentRepository _repo = FirebaseContentRepository(
+    firestore: FirebaseFirestore.instance,
+    // Read UID from AuthService (backed by FirebaseAuth)
+    getUserId: () => AuthService().currentUser!.uid,
+  );
   Mission? _mission;
   int _contentIndex = 0; // index within Mission.content
   int _score = 0;
@@ -26,6 +35,7 @@ class _QuizPageState extends State<QuizPage> {
   bool _loading = true;
   bool _optionsVisible = true;
   double _optionsOpacity = 1.0;
+  final Map<String, dynamic> _answers = {};
 
   @override
   void initState() {
@@ -37,11 +47,44 @@ class _QuizPageState extends State<QuizPage> {
     final mission = await _repo.fetchMissionById(widget.missionId);
     setState(() {
       _mission = mission;
-      // Restore saved progress
-      _contentIndex = GameState.instance.getContentIndex(widget.missionId);
-      _score = GameState.instance.getScore(widget.missionId);
+      if (widget.resetOnStart) {
+        // Start over requested: clear and reset
+        GameState.instance.clearProgress(widget.missionId);
+        _contentIndex = 0;
+        _score = 0;
+      } else {
+        // Restore saved progress
+        _contentIndex = GameState.instance.getContentIndex(widget.missionId);
+        _score = GameState.instance.getScore(widget.missionId);
+        // Also hydrate from preferences in case app restarted (persistent resume)
+        final prefs = PreferencesService.instance;
+        if (prefs.lastMissionId == widget.missionId) {
+          _contentIndex = prefs.lastContentIndex;
+          _score = prefs.lastScore;
+        }
+      }
       _loading = false;
     });
+    // Load saved Firestore progress (optional, for answer map merging)
+    final saved = await _repo.getMissionProgress(mission.id);
+    if (saved != null) {
+      _answers.addAll(saved.answers);
+    }
+    // Clamp content index to valid range and reset score if invalid
+    if (_mission != null) {
+      final len = _mission!.content.length;
+      if (len == 0) {
+        setState(() {
+          _contentIndex = 0;
+          _score = widget.resetOnStart ? 0 : _score;
+        });
+      } else if (_contentIndex < 0 || _contentIndex >= len) {
+        setState(() {
+          _contentIndex = 0;
+          _score = 0; // start from zero if index was invalid (start over)
+        });
+      }
+    }
     _hydrateSelection();
     _revealOptionsWithDelay();
   }
@@ -67,6 +110,20 @@ class _QuizPageState extends State<QuizPage> {
     // Save progress immediately after answering
     GameState.instance.saveProgress(widget.missionId, _contentIndex, _score);
     GameState.instance.saveAnswerIndex(widget.missionId, _contentIndex, optionIdx);
+
+    // Also persist to Firestore
+    _answers[q.id] = {
+      'selectedOptionId': selected.id,
+      'isCorrect': correct,
+      'attempts': 1,
+    };
+    await _repo.saveMissionProgress(MissionProgress(
+      missionId: _mission!.id,
+      score: _score,
+      maxScore: _mission!.maxPossiblePoints,
+      answers: _answers,
+      isCompleted: false,
+    ));
   }
 
   void _next() {
@@ -106,6 +163,15 @@ class _QuizPageState extends State<QuizPage> {
       );
       // Clear progress on finish
       GameState.instance.clearProgress(widget.missionId);
+      // Mark as completed in Firestore
+      _repo.saveMissionProgress(MissionProgress(
+        missionId: _mission!.id,
+        score: _score,
+        maxScore: _mission!.maxPossiblePoints,
+        answers: _answers,
+        isCompleted: true,
+        completedAt: DateTime.now(),
+      ));
     }
   }
 
@@ -147,7 +213,11 @@ class _QuizPageState extends State<QuizPage> {
 
   void _revealOptionsWithDelay() async {
     // Simulate the requested 3s before answers roll down gradually
-    final isQuestion = _mission != null && _mission!.content[_contentIndex] is Question;
+    final isQuestion = _mission != null &&
+        _mission!.content.isNotEmpty &&
+        _contentIndex >= 0 &&
+        _contentIndex < _mission!.content.length &&
+        _mission!.content[_contentIndex] is Question;
     final delay = isQuestion ? const Duration(seconds: 3) : const Duration(milliseconds: 250);
     await Future.delayed(delay);
     if (!mounted) return;
@@ -196,6 +266,17 @@ class _QuizPageState extends State<QuizPage> {
     }
 
     final content = _mission!.content;
+    if (content.isEmpty) {
+      return Scaffold(
+        appBar: GameHeader(
+          showBack: true,
+          onBack: _handleBack,
+        ),
+        body: const Center(
+          child: Text('No content available for this mission.'),
+        ),
+      );
+    }
     final item = content[_contentIndex];
     final questions = _mission!.questions;
     int currentQNumber = 0;
